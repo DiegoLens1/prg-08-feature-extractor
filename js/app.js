@@ -1,18 +1,23 @@
 const video = document.getElementById("webcam");
 const label = document.getElementById("label");
+const featureExtractor = ml5.featureExtractor('MobileNet', modelLoaded);
+const options = { numLabels: 3 };
+const classifier = featureExtractor.classification(video, options);
 
 const labelOneBtn = document.querySelector("#labelOne");
 const labelTwoBtn = document.querySelector("#labelTwo");
 const labelThreeBtn = document.querySelector("#labelThree");
 const trainbtn = document.querySelector("#train");
+const savebtn = document.querySelector("#saveModel");
+const loadbtn = document.querySelector("#loadModel");
 
 labelOneBtn.addEventListener("click", () => classifier.addImage('dog', ()=> {console.log("added dog image")}));
 labelTwoBtn.addEventListener("click", () => classifier.addImage('cat', ()=> {console.log("added cat image")}));
 labelThreeBtn.addEventListener("click", () => classifier.addImage('bird', ()=> {console.log("added bird image")}));
+savebtn.addEventListener("click", () => featureExtractor.save());
+loadbtn.addEventListener("click", () => featureExtractor.load('./model/model.json', customModelLoaded));
 
-trainbtn.addEventListener("click", () => classifier.train((lossValue) => {
-    console.log('Loss is', lossValue);
-  }));
+trainbtn.addEventListener("click", () => train());
 
 if (navigator.mediaDevices.getUserMedia) {
     navigator.mediaDevices
@@ -25,39 +30,50 @@ if (navigator.mediaDevices.getUserMedia) {
         });
 }
 
-setInterval(()=>{
-    classifier.classify(video, (err, result) => {
-        if (err) console.log(err)
-        console.log(result)
-        label.innerHTML = result[0].label
-    })
-}, 1000)
+let synth = window.speechSynthesis
 
-// Extract the already learned features from MobileNet
-const featureExtractor = ml5.featureExtractor('MobileNet', modelLoaded);
+function speak(text) {
+    if (synth.speaking) {
+        console.log('still speaking...')
+        return
+    }
+    if (text !== '') {
+        let utterThis = new SpeechSynthesisUtterance(text)
+        synth.speak(utterThis)
+    }
+}
+
+function train() {
+    classifier.train((lossValue) => {
+        console.log('Loss is', lossValue);
+        if(lossValue == null) {
+            showClassification()
+        }
+      })
+}
+
+function customModelLoaded() {
+    console.log("Custom model loaded")
+    showClassification()
+}
+
+function showClassification() {
+    setInterval(()=>{
+        classifier.classify(video, (err, result) => {
+            if (err) console.log(err)
+            console.log(result)
+            label.innerHTML = result[0].label + "   " + result[0].confidence
+            speak(result[0].label)
+        })
+    }, 1000)
+}
 
 // When the model is loaded
 function modelLoaded() {
   console.log('Model Loaded!');
 }
 
-// Create a new classifier using those features and with a video element
-const classifier = featureExtractor.classification(video, videoReady);
-
 // Triggers when the video is ready
-function videoReady() {
+function    videoReady() {
   console.log('The video is ready!');
 }
-
-// Add a new image with a label
-classifier.addImage(document.getElementById('dogA'), 'dog');
-
-// Retrain the network
-classifier.train((lossValue) => {
-    console.log('Loss is', lossValue)
-})
-
-// Get a prediction for that image
-classifier.classify(document.getElementById('dogB'), (err, result) => {
-  console.log(result); // Should output 'dog'
-});
