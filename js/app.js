@@ -15,7 +15,7 @@ const loadbtn = document.querySelector("#loadModel");
 objectAmountInputbtn.addEventListener("click", () => setObjectAmount(objectAmountInput.value));
 createNewObjectbtn.addEventListener("click", () => addNewObject(createNewObject.value));
 savebtn.addEventListener("click", () => featureExtractor.save());
-loadbtn.addEventListener("click", () => featureExtractor.load('./model/model.json', customModelLoaded));
+loadbtn.addEventListener("click", () => loadCustomModel());
 
 trainbtn.addEventListener("click", () => train());
 
@@ -63,6 +63,11 @@ function train() {
             showClassification()
         }
       })
+}
+
+function loadCustomModel() {
+    if(Error) setObjectAmount(options["numLabels"])
+    featureExtractor.load('./model/model.json', customModelLoaded)
 }
 
 function customModelLoaded() {
